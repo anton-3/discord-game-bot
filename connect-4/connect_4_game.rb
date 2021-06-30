@@ -32,8 +32,8 @@ class Connect4Game
     @board.win?
   end
 
-  def col_full?(col)
-    @board.col_full?(col)
+  def legal_move?(col)
+    @board.legal_moves.include?(col)
   end
 
   def board_full?

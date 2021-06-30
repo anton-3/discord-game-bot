@@ -1,12 +1,13 @@
 # frozen-string-literal: true
 
+require_relative '../game'
 require_relative 'connect_4_game'
 require_relative 'board'
 require_relative 'player'
 require_relative 'ai_player'
 
 # logic for interacting with the game through the discord bot client
-class Connect4
+class Connect4 < Game
   attr_reader :help
 
   BOTS_ALLOWED = true
@@ -23,14 +24,8 @@ class Connect4
   # AI level 3: minimax algorithm
   AI_LEVEL = 3
 
-  def initialize
-    @active_players = []
-    @bots = []
-    @help = help_str
-  end
-
   def add_bot(bot)
-    @bots << bot
+    super
     bot.command(:c4play, description: COMMANDS[:play], min_args: 1, aliases: [:c4p]) { |msg| cmd_play(msg) }
     bot.command(:c4move, description: COMMANDS[:move], min_args: 1, aliases: [:c4m]) { |msg| cmd_move(msg) }
     bot.command(:c4resign, description: COMMANDS[:resign], max_args: 0, aliases: [:c4r]) { |msg| cmd_resign(msg) }
@@ -41,23 +36,7 @@ class Connect4
   private
 
   def cmd_play(msg)
-    return unless msg.server
-
-    target = find_target(msg)
-
-    if locate_player(msg.author)
-      msg.respond("You're already in a game")
-    elsif !target
-      msg.respond("Couldn't find that person")
-    elsif locate_player(target)
-      msg.respond("They're already in a game")
-    elsif target == msg.author
-      msg.respond("You can't play yourself")
-    elsif !BOTS_ALLOWED && (target.bot_account? || msg.author.bot_account?)
-      msg.respond("Bots can't play")
-    else
-      start_game(msg, msg.author, target)
-    end
+    super
   end
 
   def cmd_move(msg)
@@ -74,7 +53,7 @@ class Connect4
       game = player.game
       if game.whose_turn != player
         msg.respond('Not your turn')
-      elsif game.col_full?(move)
+      elsif !game.legal_move?(move)
         msg.respond('Illegal move')
       else
         player.make_move(move)
@@ -84,27 +63,18 @@ class Connect4
   end
 
   def cmd_resign(msg)
-    return unless msg.server
-
-    player = locate_player(msg.author)
-    if !player
-      msg.respond("You're not in a game")
-    else
-      game = player.game
-      end_game(game)
-      win_msg = "#{player == game.p1 ? game.p2.name : game.p1.name} wins!\n"
-      msg.respond("#{win_msg}#{player.user.mention} has resigned the game between #{game.p1.name} and #{game.p2.name}.")
-    end
+    super
   end
 
   def cmd_help(msg)
-    msg.respond(@help)
+    super
   end
 
   def reaction_add(evt)
+    return unless bot_users.include?(evt.message.author) && evt.message.content[0..8] == 'Connect 4'
     return unless evt.message.reactions.length == 7 && NUMBER_CODES.include?(evt.emoji.to_s)
 
-    user_id = evt.message.content[2...20].to_i
+    user_id = evt.message.content.split("\n")[1][2...20].to_i
     return unless evt.user.id == user_id
 
     move = NUMBER_CODES.index(evt.emoji.to_s)
@@ -112,7 +82,7 @@ class Connect4
     return unless player
 
     game = player.game
-    return if game.whose_turn != player || game.col_full?(move)
+    return if game.whose_turn != player || !game.legal_move?(move)
 
     player.make_move(move)
     handle_move(player, evt.channel)
@@ -133,22 +103,17 @@ class Connect4
     str
   end
 
-  def find_target(msg)
-    target_name = msg.content[(msg.content.index(' ') + 1)..-1]
-    msg.server.members.select { |member| member.display_name.downcase == target_name.downcase }[0]
-  end
-
   def start_game(msg, user1, user2)
     which_ai = [ai?(user1), ai?(user2)]
     game = Connect4Game.new user1, user2, randomize: RANDOM_STARTING_PLAYER, which_ai: which_ai
-    puts "#{Time.new.strftime('%H:%M:%S')} Game between #{game.p1.name} and #{game.p2.name} has started"
+    puts "#{Time.new.strftime('%H:%M:%S')} Connect 4 game between #{game.p1.name} and #{game.p2.name} has started"
     @active_players.push(game.p1, game.p2)
     display_turn(game, msg.channel)
     handle_ai(game.whose_turn, msg.channel)
   end
 
   def end_game(game)
-    puts "#{Time.new.strftime('%H:%M:%S')} Game between #{game.p1.name} and #{game.p2.name} has ended"
+    puts "#{Time.new.strftime('%H:%M:%S')} Connect 4ame between #{game.p1.name} and #{game.p2.name} has ended"
     @active_players.delete(game.p1)
     @active_players.delete(game.p2)
   end
@@ -186,17 +151,11 @@ class Connect4
     handle_move(ai_player, channel)
   end
 
-  # checks if a user should be considered an ai
-  # currently you can only be an ai if you're a bot account
-  def ai?(user)
-    user.bot_account?
-  end
-
   def display_turn(game, channel)
     player = game.whose_turn
     color = ":#{player.color}_circle:"
-    # don't add anything to the beginning of this message or stuff breaks
-    msg = channel.send("#{player.user.mention}'s turn: #{color}\n\n#{game}")
+    # 'Connect 4' needs to be at the beginning of the message
+    msg = channel.send("Connect 4\n#{player.user.mention}'s turn: #{color}\n\n#{game}")
     add_reactions(msg) unless player.is_a?(AIPlayer)
   end
 
@@ -204,11 +163,5 @@ class Connect4
     7.times do |num|
       msg.react(NUMBER_CODES[num])
     end
-  end
-
-  # returns the player object of a discord user if in @active_players
-  # if not an active player, returns nil
-  def locate_player(player)
-    @active_players.select { |p| p.user == player }[0]
   end
 end

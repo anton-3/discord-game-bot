@@ -36,10 +36,6 @@ class Board
     four_in_row? || four_in_col? || four_in_diag?
   end
 
-  def col_full?(col)
-    !@contents[col].include?(0)
-  end
-
   def full?
     @contents.reduce(true) do |memo, col|
       memo && !col.include?(0)
@@ -140,7 +136,7 @@ class Board
 
   def update_legal_moves
     7.times do |move|
-      @legal_moves.delete(move) if col_full?(move)
+      @legal_moves.delete(move) unless @contents[move].include?(0)
     end
   end
 end
