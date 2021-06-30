@@ -59,7 +59,7 @@ class GameBot
 
   # TODO: make this an embed
   def cmd_gamehelp(msg)
-    response = "**List of commands:**\n"
+    response = '**List of commands:**'
     @games.each do |game|
       response += game.help
     end

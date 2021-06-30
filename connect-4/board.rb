@@ -9,16 +9,16 @@ class Board
     @colors = { 1 => p1_color, -1 => p2_color }
     @legal_moves = (0..6).to_a
     @contents = []
-    7.times { @contents.push(Array.new(6, 0)) }
+    7.times { @contents.push(Array.new(6, 0)) } # empty is stored as 0
   end
 
   def make_move(move, value)
     # assumes the move is legal (column isn't full)
     # player 1's move is stored as 1, player 2's stored as -1
-    col_arr = @contents[move]
-    col_arr[col_arr.index(0)] = value
+    col_ary = @contents[move]
+    col_ary[col_ary.index(0)] = value
     @turn_count += 1
-    update_legal_moves
+    update_legal_moves(move)
   end
 
   def to_s
@@ -44,11 +44,11 @@ class Board
 
   # returns array of all rows
   def rows
-    arr = []
+    row_arys = []
     @contents[0].length.times do |num|
-      arr.push(row(num))
+      row_arys.push(row(num))
     end
-    arr
+    row_arys
   end
 
   # returns array of all diagonals
@@ -61,11 +61,11 @@ class Board
   # rows counted top to bottom, starts at 0
   def row(num, contents = @contents)
     index = contents[0].length - 1 - num
-    row_arr = []
+    row_ary = []
     contents.each do |col|
-      row_arr.push(col[index])
+      row_ary.push(col[index])
     end
-    row_arr
+    row_ary
   end
 
   # check if there's any sequence of four in any row on the board
@@ -134,9 +134,7 @@ class Board
     diags
   end
 
-  def update_legal_moves
-    7.times do |move|
-      @legal_moves.delete(move) unless @contents[move].include?(0)
-    end
+  def update_legal_moves(move)
+    @legal_moves.delete(move) unless @contents[move].include?(0)
   end
 end

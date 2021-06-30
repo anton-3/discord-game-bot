@@ -1,7 +1,7 @@
 # frozen-string-literal: true
 
-# base class for games with 2 players
-class Game
+# base class for discord games with 2 players
+class DiscordGame
   attr_reader :help
 
   def initialize
@@ -53,11 +53,6 @@ class Game
 
   def cmd_help(msg)
     msg.respond(@help)
-  end
-
-  def reaction_add(evt)
-    bot_users = @bots.map { |bot| bot.bot_user }
-    return unless bot_users.include?(evt.message.author)
   end
 
   def start_game(*); end

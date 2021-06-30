@@ -1,15 +1,16 @@
 # frozen-string-literal: true
 
-require_relative '../game'
+require_relative '../discord_game'
 require_relative 'connect_4_game'
 require_relative 'board'
 require_relative 'player'
 require_relative 'ai_player'
 
 # logic for interacting with the game through the discord bot client
-class Connect4 < Game
+class Connect4 < DiscordGame
   attr_reader :help
 
+  GAME_NAME = 'Connect 4'
   BOTS_ALLOWED = true
   RANDOM_STARTING_PLAYER = true
   NUMBER_CODES = %w[1⃣ 2⃣ 3⃣ 4⃣ 5⃣ 6⃣ 7⃣].freeze
@@ -71,10 +72,10 @@ class Connect4 < Game
   end
 
   def reaction_add(evt)
-    return unless bot_users.include?(evt.message.author) && evt.message.content[0..8] == 'Connect 4'
+    return unless bot_users.include?(evt.message.author) && evt.message.content[0, GAME_NAME.length] == GAME_NAME
     return unless evt.message.reactions.length == 7 && NUMBER_CODES.include?(evt.emoji.to_s)
 
-    user_id = evt.message.content.split("\n")[1][2...20].to_i
+    user_id = evt.message.content.split("\n")[1][2, 18].to_i
     return unless evt.user.id == user_id
 
     move = NUMBER_CODES.index(evt.emoji.to_s)
@@ -89,7 +90,7 @@ class Connect4 < Game
   end
 
   def help_str
-    str = '*Connect 4 commands:*'
+    str = "\n*Connect 4 commands:*"
     COMMANDS.each do |name, desc|
       str += case name
              when :play
@@ -113,7 +114,7 @@ class Connect4 < Game
   end
 
   def end_game(game)
-    puts "#{Time.new.strftime('%H:%M:%S')} Connect 4ame between #{game.p1.name} and #{game.p2.name} has ended"
+    puts "#{Time.new.strftime('%H:%M:%S')} Connect 4 game between #{game.p1.name} and #{game.p2.name} has ended"
     @active_players.delete(game.p1)
     @active_players.delete(game.p2)
   end
@@ -145,7 +146,7 @@ class Connect4 < Game
              ai_player.find_best_move
            end
 
-    return unless @active_players.include?(ai_player)
+    return unless @active_players.include?(ai_player) # opponent could've resigned while AI was thinking of a move
 
     ai_player.make_move(move)
     handle_move(ai_player, channel)
