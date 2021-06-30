@@ -9,9 +9,6 @@ require_relative 'ai_player'
 class Connect4
   attr_reader :help
 
-  CONFIG = File.foreach('config.txt').map { |line| line.split(' ').join(' ') }
-  TOKEN = CONFIG[0].to_s
-  CLIENT_ID = CONFIG[1].to_s
   BOTS_ALLOWED = true
   RANDOM_STARTING_PLAYER = true
   NUMBER_CODES = %w[1⃣ 2⃣ 3⃣ 4⃣ 5⃣ 6⃣ 7⃣].freeze
