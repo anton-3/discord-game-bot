@@ -102,12 +102,10 @@ class Connect4
   end
 
   def reaction_add(evt)
-    bot_users = @bots.map { |bot| bot.bot_user }
-    return unless bot_users.include?(evt.message.author)
+    return unless evt.message.reactions.length == 7 && NUMBER_CODES.include?(evt.emoji.to_s)
 
-    evt.message.delete_reaction(evt.user, evt.emoji.to_s)
-    user_id = evt.message.content[2...(evt.message.content.index('>'))].to_i
-    return unless evt.message.reactions.length == 7 && NUMBER_CODES.include?(evt.emoji.to_s) && evt.user.id == user_id
+    user_id = evt.message.content[2...20].to_i
+    return unless evt.user.id == user_id
 
     move = NUMBER_CODES.index(evt.emoji.to_s)
     player = locate_player(evt.user)
@@ -181,6 +179,9 @@ class Connect4
            when 3
              ai_player.find_best_move
            end
+
+    return unless @active_players.include?(ai_player)
+
     ai_player.make_move(move)
     handle_move(ai_player, channel)
   end

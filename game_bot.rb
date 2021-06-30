@@ -31,6 +31,7 @@ class GameBot
       game.add_bot(@bot)
     end
     @bot.command(:gamehelp, description: HELP_DESC, max_args: 0, aliases: [:gh]) { |msg| cmd_gamehelp(msg) }
+    @bot.reaction_add { |evt| auto_delete_reactions(evt) }
     @bot.ready { on_ready }
   end
 
@@ -63,5 +64,9 @@ class GameBot
       response += game.help
     end
     msg.respond(response)
+  end
+
+  def auto_delete_reactions(evt)
+    evt.message.delete_reaction(evt.user, evt.emoji.to_s) if @bot.bot_user == evt.message.author
   end
 end
