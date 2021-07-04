@@ -10,7 +10,7 @@
 require 'discordrb'
 require_relative 'discord_game'
 
-%w[connect-4].each do |game_dir|
+%w[connect-4 tic-tac-toe].each do |game_dir|
   require_relative "#{game_dir}/client.rb"
 end
 
@@ -20,11 +20,12 @@ class GameBot
   CONFIG = File.foreach('config.txt').map { |line| line.split(' ').join(' ') }
   TOKEN = CONFIG[0].to_s
   CLIENT_ID = CONFIG[1].to_s
-  LOG_MODE = :normal
+  LOG_MODE = :silent
   STATUS = 'invisible'
   HELP_DESC = 'Shows a list of available game commands'
   GAMES = [
-    Connect4
+    Connect4,
+    TicTacToe
   ].freeze
 
   def initialize
