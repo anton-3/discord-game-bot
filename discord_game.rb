@@ -9,6 +9,7 @@ class DiscordGame
     @bots = []
     @help = help_str
     @bot_players_allowed = true
+    @game_msg_ids = {} # used to make sure reaction event listeners don't overlap between games
   end
 
   def add_bot(bot)

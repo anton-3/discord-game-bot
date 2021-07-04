@@ -3,11 +3,16 @@
 #
 # TODO:
 # tic tac toe
+# rock paper scissors
 # hangman
 # chess (eventually)
 
 require 'discordrb'
-require_relative 'connect-4/connect_4'
+require_relative 'discord_game'
+
+%w[connect-4].each do |game_dir|
+  require_relative "#{game_dir}/client.rb"
+end
 
 # logic for the bot client
 # adds functionality from each individual game and controls running the bot
@@ -16,7 +21,7 @@ class GameBot
   TOKEN = CONFIG[0].to_s
   CLIENT_ID = CONFIG[1].to_s
   LOG_MODE = :normal
-  STATUS = 'online'
+  STATUS = 'invisible'
   HELP_DESC = 'Shows a list of available game commands'
   GAMES = [
     Connect4
@@ -25,8 +30,8 @@ class GameBot
   def initialize
     @bot = create_bot
     @games = []
-    GAMES.each do |game_class|
-      game = game_class.new
+    GAMES.each do |game_module|
+      game = game_module::Client.new
       @games << game
       game.add_bot(@bot)
     end
