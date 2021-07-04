@@ -1,14 +1,9 @@
 # frozen-string-literal: true
 
 module Connect4
-  #
-  # TODO:
-  # improve heuristic function
-  # more optimization
-  #
-
   # logic for an ai player that always finds the best move
   class AIPlayer < Connect4::Player
+    LOG_MOVES = false
     # assigns a score to each position on the board
     EVAL_TABLE = [
       [3, 4, 5, 7, 5, 4, 3],
@@ -24,7 +19,16 @@ module Connect4
       2 => 4,
       3 => 15
     }.freeze
-    LOG_MOVES = false
+    # defines a cutoff depth for each number of remaining free columns
+    CUTOFF_DEPTHS = {
+      1 => 1000,
+      2 => 1000,
+      3 => 1000,
+      4 => 8,
+      5 => 6,
+      6 => 5,
+      7 => 5
+    }.freeze
 
     def initialize(*)
       super
@@ -57,12 +61,12 @@ module Connect4
       return 3 if @board.turn_count == 1
 
       moves = {}
-      @cutoff_depth = calculate_cutoff_depth(@board.legal_moves.length)
+      cutoff_depth = CUTOFF_DEPTHS[@board.legal_moves.length]
 
       @board.legal_moves.each do |move|
         copy = Marshal.load(Marshal.dump(@board))
         copy.move(move, @value)
-        score = -minimax(copy, -@value)
+        score = -minimax(copy, -@value, cutoff_depth)
         moves[move] = score
       end
 
@@ -76,18 +80,18 @@ module Connect4
 
     # board: the board scored by the minimax function
     # p_value: the value of the player that's being scored for, either 1 or -1
-    # a greater score means it's better for that player
     # depth: the recursive depth of the function
     # alpha and beta: alpha beta pruning http://blog.gamesolver.org/solving-connect-four/04-alphabeta/
-    def minimax(board, p_value, depth = 0, alpha = -10000, beta = 10000)
+    # after reaching cutoff_depth, the algorithm relies on the heuristic function to score a board position
+    def minimax(board, p_value, cutoff_depth, depth = 0, alpha = -10000, beta = 10000)
       return 0 if board.full?
       return -1000 + depth if board.win?
-      return heuristic(board, p_value) if depth == @cutoff_depth
+      return heuristic(board, p_value) if depth == cutoff_depth
 
       board.legal_moves.each do |move|
         copy = Marshal.load(Marshal.dump(board))
         copy.move(move, p_value)
-        score = -minimax(copy, -p_value, depth + 1, -beta, -alpha)
+        score = -minimax(copy, -p_value, cutoff_depth, depth + 1, -beta, -alpha)
         return score if score >= beta
 
         alpha = score if score > alpha
@@ -120,7 +124,7 @@ module Connect4
     # scores a position based on all the potential wins left for each player
     def score_potential_wins(board, p_value)
       score = 0
-      lines = (board.rows + board.contents + board.diagonals).select { |arr| arr.length >= 4 } # remove if shorter than 4
+      lines = (board.rows + board.contents + board.diagonals.select { |arr| arr.length >= 4 }) # remove if length < 4
       lines.each do |line|
         next if line.uniq.length == 1 # don't evaluate if it's all zeroes
 
@@ -136,12 +140,6 @@ module Connect4
         end
       end
       score
-    end
-
-    # calculate how deep the minimax algorithm should look based on how many legal moves there are in a position
-    def calculate_cutoff_depth(num_moves)
-      initial_cutoff = 5
-      cutoff = num_moves < 6 ? initial_cutoff + (6 - num_moves) : initial_cutoff
     end
 
     def win_for?(board, value)
