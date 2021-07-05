@@ -8,6 +8,7 @@
 # chess (eventually)
 
 require 'discordrb'
+require 'dotenv'
 require_relative 'discord_game'
 
 %w[connect-4 tic-tac-toe].each do |game_dir|
@@ -17,11 +18,11 @@ end
 # logic for the bot client
 # adds functionality from each individual game and controls running the bot
 class GameBot
-  CONFIG = File.foreach('config.txt').map { |line| line.split(' ').join(' ') }
-  TOKEN = CONFIG[0].to_s
-  CLIENT_ID = CONFIG[1].to_s
+  Dotenv.load
+  TOKEN = ENV['TOKEN']
+  CLIENT_ID = ENV['CLIENT_ID']
   LOG_MODE = :silent
-  STATUS = 'invisible'
+  STATUS = 'online'
   HELP_DESC = 'Shows a list of available game commands'
   GAMES = [
     Connect4,
